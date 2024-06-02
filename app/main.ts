@@ -49,7 +49,7 @@ const server = net.createServer((socket) => {
         }
 
         function getInfoHeader(key: string) {
-            return requestString.split(`${key}: `)[1].split(CRLF)[0]
+            return requestString.split(`${key}: `)[1]?.split(CRLF)[0]
         }
 
         switch (path) {
@@ -85,7 +85,13 @@ const server = net.createServer((socket) => {
             }
             case 'echo': {
                 const dataEcho = pathRequest.slice(PATH_ECHO.length + 1)
-                response = `${httpVersion} ${HTTP_STATUS_CODE.OK}${CRLF}Content-Type: text/plain${CRLF}Content-Length: ${dataEcho.length}${CRLF}${CRLF}${dataEcho}`
+                const userAgent = getInfoHeader('Accept-Encoding')
+
+                console.log("userAgent", userAgent)
+
+                const header = `${userAgent === 'gzip' ? `Content-Encoding: gzip${CRLF}` : ''}Content-Type: text/plain${CRLF}Content-Length: ${dataEcho.length}`
+
+                response = `${httpVersion} ${HTTP_STATUS_CODE.OK}${CRLF}${header}${CRLF}${CRLF}${dataEcho}`
                 break;
             }
             case 'user-agent': {
