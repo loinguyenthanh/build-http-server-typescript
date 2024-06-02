@@ -1,6 +1,6 @@
 import * as net from 'net'
 import * as fs from 'fs'
-import { saveDataToFile } from './helpers'
+import { encodeToHex, saveDataToFile } from './helpers'
 import { CRLF, HTTP_STATUS_CODE } from './constants'
 
 const METHOD_INDEX = 0
@@ -34,12 +34,12 @@ const server = net.createServer((socket) => {
         const httpVersion = requestInfo[HTTP_VERSION_INDEX]
         const dataBody = requestInfoArray[requestInfoArray.length - 1]
 
-        console.log("\r\nrequestString", requestString)
-        console.log("\r\nrequestInfoRaw", requestInfoRaw)
-        console.log("\r\nrequestInfo", requestInfo)
-        console.log("\r\nmethod", method)
-        console.log("\r\npathRequest", pathRequest)
-        console.log("\r\ndataBody", dataBody)
+        console.log("requestString", requestString)
+        console.log("requestInfoRaw", requestInfoRaw)
+        console.log("requestInfo", requestInfo)
+        console.log("method", method)
+        console.log("pathRequest", pathRequest)
+        console.log("dataBody", dataBody)
 
         let response: string = `${httpVersion} ${HTTP_STATUS_CODE.NOT_FOUND}${CRLF}`
 
@@ -84,12 +84,19 @@ const server = net.createServer((socket) => {
                 break;
             }
             case 'echo': {
-                const dataEcho = pathRequest.slice(PATH_ECHO.length + 1)
+                let dataEcho = pathRequest.slice(PATH_ECHO.length + 1)
                 const acceptEncoding = getInfoHeader('Accept-Encoding')
 
-                console.log("userAgent", acceptEncoding)
+                let header = `Content-Type: text/plain${CRLF}Content-Length: ${dataEcho.length}`
 
-                const header = `${acceptEncoding && acceptEncoding.includes('gzip') ? `Content-Encoding: gzip${CRLF}` : ''}Content-Type: text/plain${CRLF}Content-Length: ${dataEcho.length}`
+                console.log("userAgent", acceptEncoding, encodeToHex(dataEcho))
+
+                if(acceptEncoding && acceptEncoding.includes('gzip')) {
+                    header = `Content-Encoding: gzip${CRLF}${header}`
+                    dataEcho = encodeToHex(dataEcho)
+                }
+
+
 
                 response = `${httpVersion} ${HTTP_STATUS_CODE.OK}${CRLF}${header}${CRLF}${CRLF}${dataEcho}`
                 break;

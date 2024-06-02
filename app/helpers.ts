@@ -29,3 +29,22 @@ export const saveDataToFile = (pathFile: string, data: string) => {
     });
   });
 };
+
+
+export const encodeToHex = (data: string): string => {
+  const buffer = Buffer.from(data, 'utf-8');
+  return buffer.toString('hex');
+};
+
+export const decodeFromHex = (hexData: string): string => {
+  const buffer = Buffer.from(hexData, 'hex');
+  return buffer.toString('utf-8');
+};
+
+export const toHex = (str: string) => {
+  var result = '';
+  for (var i=0; i<str.length; i++) {
+    result += str.charCodeAt(i).toString(16);
+  }
+  return result;
+}
