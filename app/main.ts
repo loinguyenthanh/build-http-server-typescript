@@ -85,11 +85,11 @@ const server = net.createServer((socket) => {
             }
             case 'echo': {
                 const dataEcho = pathRequest.slice(PATH_ECHO.length + 1)
-                const userAgent = getInfoHeader('Accept-Encoding')
+                const acceptEncoding = getInfoHeader('Accept-Encoding')
 
-                console.log("userAgent", userAgent)
+                console.log("userAgent", acceptEncoding)
 
-                const header = `${userAgent === 'gzip' ? `Content-Encoding: gzip${CRLF}` : ''}Content-Type: text/plain${CRLF}Content-Length: ${dataEcho.length}`
+                const header = `${acceptEncoding.includes('gzip') ? `Content-Encoding: gzip${CRLF}` : ''}Content-Type: text/plain${CRLF}Content-Length: ${dataEcho.length}`
 
                 response = `${httpVersion} ${HTTP_STATUS_CODE.OK}${CRLF}${header}${CRLF}${CRLF}${dataEcho}`
                 break;
