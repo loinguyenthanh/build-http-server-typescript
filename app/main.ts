@@ -8,28 +8,52 @@ const PATH_ECHO = '/echo'
 
 const server = net.createServer((socket) => {
     socket.on('data', (data) => {
-        const dataString = data.toString()
-        const dataArray = dataString.split('\r\n')
+        const requestString = data.toString()
+        const [requestInfoRaw] = requestString.split('\r\n')
 
-        const requestInfo = dataArray[0].split(' ')
+        const requestInfo = requestInfoRaw.split(' ')
 
         const method = requestInfo[METHOD_INDEX]
         const pathRequest = requestInfo[PATH_REQUEST_INDEX]
+        const path = pathRequest.split('/')[1]
         const httpVersion = requestInfo[HTTP_VERSION_INDEX]
 
-        console.log("data", dataArray,requestInfo, method, pathRequest)
+        console.log("data",requestString, requestInfoRaw,requestInfo, method, pathRequest)
 
-        if (pathRequest === '/') {
-            socket.write(`${httpVersion} 200 OK\r\n\r\n`)
-        } if(pathRequest.startsWith(PATH_ECHO)) {
-            const dataEcho = pathRequest.slice(PATH_ECHO.length + 1)
+        let response: string;
 
-            socket.write(`${httpVersion} 200 OK\r\nContent-Type: text/plain\r\nContent-Length: ${dataEcho.length}\r\n\r\n${dataEcho}`)
-        } else {
-            socket.write(`${httpVersion} 404 Not Found\r\n\r\n`)
-
+        function changeResponse(response: string): void {
+            socket.write(response);
+            socket.end();
         }
-        socket.end();
+
+        function getInfoHeader(key: string) {
+            return requestString.split(`${key}: `)[1].split('\r\n')[0]
+        }
+
+        switch (path) {
+            case '': {
+                response = `${httpVersion} 200 OK\r\n\r\n`
+                break;
+            }
+            case 'echo': {
+            const dataEcho = pathRequest.slice(PATH_ECHO.length + 1)
+                response = `${httpVersion} 200 OK\r\nContent-Type: text/plain\r\nContent-Length: ${dataEcho.length}\r\n\r\n${dataEcho}`
+                break;
+            }
+            case 'user-agent': {
+                const userAgent = getInfoHeader('User-Agent')
+                response = `${httpVersion} 200 OK\r\nContent-Type: text/plain\r\nContent-Length: ${userAgent.length}\r\n\r\n${userAgent}`
+                break;
+            }
+            default: {
+                response = `${httpVersion} 404 Not Found\r\n\r\n`
+                break;
+            }
+        }
+
+        changeResponse(response)
+
     })
 
 });
