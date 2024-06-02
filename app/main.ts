@@ -1,4 +1,5 @@
-import * as net from 'net';
+import * as net from 'net'
+import * as fs from 'fs'
 
 const METHOD_INDEX = 0
 const PATH_REQUEST_INDEX = 1
@@ -6,8 +7,18 @@ const HTTP_VERSION_INDEX = 2
 
 const PATH_ECHO = '/echo'
 
+let directory = ''
+
+const args = process.argv.slice(2);
+
+if (args[0] === '--directory') {
+    directory = args[1]
+}
+
+console.log("args", args)
+
 const server = net.createServer((socket) => {
-    socket.on('data', (data) => {
+    socket.on('data', async (data) => {
         const requestString = data.toString()
         const [requestInfoRaw] = requestString.split('\r\n')
 
@@ -18,7 +29,7 @@ const server = net.createServer((socket) => {
         const path = pathRequest.split('/')[1]
         const httpVersion = requestInfo[HTTP_VERSION_INDEX]
 
-        console.log("data",requestString, requestInfoRaw,requestInfo, method, pathRequest)
+        console.log("data", requestString, requestInfoRaw, requestInfo, method, pathRequest)
 
         let response: string;
 
@@ -36,8 +47,23 @@ const server = net.createServer((socket) => {
                 response = `${httpVersion} 200 OK\r\n\r\n`
                 break;
             }
+            case 'files': {
+                const params = pathRequest.slice('files'.length + 1)
+
+                const fileDir = `${directory}${params}`
+
+                console.log("params", params);
+
+                try {
+                    const data = fs.readFileSync(fileDir, 'utf-8');
+                    response = `${httpVersion} 200 OK\r\nContent-Type: application/octet-stream\r\nContent-Length: ${data.length}\r\n\r\n${data}`;
+                } catch (err) {
+                    response = `${httpVersion} 404 Not Found\r\n\r\nFile not found`;
+                }
+                break;
+            }
             case 'echo': {
-            const dataEcho = pathRequest.slice(PATH_ECHO.length + 1)
+                const dataEcho = pathRequest.slice(PATH_ECHO.length + 1)
                 response = `${httpVersion} 200 OK\r\nContent-Type: text/plain\r\nContent-Length: ${dataEcho.length}\r\n\r\n${dataEcho}`
                 break;
             }
@@ -53,7 +79,6 @@ const server = net.createServer((socket) => {
         }
 
         changeResponse(response)
-
     })
 
 });
