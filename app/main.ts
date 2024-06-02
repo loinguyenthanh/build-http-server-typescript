@@ -1,6 +1,8 @@
 import * as net from 'net'
 import * as fs from 'fs'
-import { encodeToHex, saveDataToFile } from './helpers'
+import { gzipSync } from 'zlib'
+
+import { saveDataToFile } from './helpers'
 import { CRLF, HTTP_STATUS_CODE } from './constants'
 
 const METHOD_INDEX = 0
@@ -42,9 +44,15 @@ const server = net.createServer((socket) => {
         console.log("dataBody", dataBody)
 
         let response: string = `${httpVersion} ${HTTP_STATUS_CODE.NOT_FOUND}${CRLF}`
+        let dataResponse: any
 
-        function changeResponse(response: string): void {
+        function changeResponse(response: string, data?: any): void {
             socket.write(response);
+
+            if(data) {
+                socket.write(data);
+            }
+
             socket.end();
         }
 
@@ -67,7 +75,8 @@ const server = net.createServer((socket) => {
                 if (method === "GET") {
                     try {
                         const data = fs.readFileSync(fileDir, 'utf-8');
-                        response = `${httpVersion} ${HTTP_STATUS_CODE.OK}${CRLF}Content-Type: application/octet-stream${CRLF}Content-Length: ${data.length}${CRLF}${CRLF}${data}`;
+                        response = `${httpVersion} ${HTTP_STATUS_CODE.OK}${CRLF}Content-Type: application/octet-stream${CRLF}Content-Length: ${data.length}${CRLF}${CRLF}`;
+                        dataResponse = data
                     } catch (err) {
                         response = `${httpVersion} ${HTTP_STATUS_CODE.NOT_FOUND}${CRLF}${CRLF}File not found`;
                     }
@@ -75,7 +84,8 @@ const server = net.createServer((socket) => {
                     const result = await saveDataToFile(fileDir, dataBody)
 
                     if (result) {
-                        response = `${httpVersion} ${HTTP_STATUS_CODE.CREATED}${CRLF}Content-Type: application/octet-stream${CRLF}Content-Length: ${dataBody.length}${CRLF}${CRLF}${dataBody}`;
+                        response = `${httpVersion} ${HTTP_STATUS_CODE.CREATED}${CRLF}Content-Type: application/octet-stream${CRLF}Content-Length: ${dataBody.length}${CRLF}${CRLF}`;
+                        dataResponse = dataBody
                     } else {
                         response = `${httpVersion} ${HTTP_STATUS_CODE.BAD_REQUEST}${CRLF}`;
                     }
@@ -84,26 +94,26 @@ const server = net.createServer((socket) => {
                 break;
             }
             case 'echo': {
-                let dataEcho = pathRequest.slice(PATH_ECHO.length + 1)
+                let dataEcho: any = pathRequest.slice(PATH_ECHO.length + 1)
                 const acceptEncoding = getInfoHeader('Accept-Encoding')
 
                 let header = `Content-Type: text/plain${CRLF}Content-Length: ${dataEcho.length}`
 
-                console.log("userAgent", acceptEncoding, encodeToHex(dataEcho))
+                console.log("userAgent", acceptEncoding, gzipSync(dataEcho))
 
                 if(acceptEncoding && acceptEncoding.includes('gzip')) {
                     header = `Content-Encoding: gzip${CRLF}${header}`
-                    dataEcho = encodeToHex(dataEcho)
+                    dataEcho = gzipSync(dataEcho)
                 }
 
-
-
-                response = `${httpVersion} ${HTTP_STATUS_CODE.OK}${CRLF}${header}${CRLF}${CRLF}${dataEcho}`
+                response = `${httpVersion} ${HTTP_STATUS_CODE.OK}${CRLF}${header}${CRLF}${CRLF}`
+                dataResponse = dataEcho
                 break;
             }
             case 'user-agent': {
                 const userAgent = getInfoHeader('User-Agent')
-                response = `${httpVersion} ${HTTP_STATUS_CODE.OK}${CRLF}Content-Type: text/plain${CRLF}Content-Length: ${userAgent.length}${CRLF}${CRLF}${userAgent}`
+                response = `${httpVersion} ${HTTP_STATUS_CODE.OK}${CRLF}Content-Type: text/plain${CRLF}Content-Length: ${userAgent.length}${CRLF}${CRLF}`
+                dataResponse = userAgent
                 break;
             }
             default: {
@@ -112,7 +122,7 @@ const server = net.createServer((socket) => {
             }
         }
 
-        changeResponse(response)
+        changeResponse(response, dataResponse)
     })
 
 });

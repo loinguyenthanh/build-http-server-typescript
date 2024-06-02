@@ -1,4 +1,9 @@
 import * as fs from 'fs';
+import { promisify } from 'util';
+import { gzip } from 'zlib';
+
+const gzipPromise = promisify(gzip);
+
 
 export const saveDataToFile = (pathFile: string, data: string) => {
   return new Promise<boolean>((resolve, reject) => {
@@ -41,10 +46,12 @@ export const decodeFromHex = (hexData: string): string => {
   return buffer.toString('utf-8');
 };
 
-export const toHex = (str: string) => {
-  var result = '';
-  for (var i=0; i<str.length; i++) {
-    result += str.charCodeAt(i).toString(16);
+export const encodeToGzip = async (data: string): Promise<Buffer> => {
+  try {
+    const buffer = Buffer.from(data, 'utf-8');
+    const compressed = await gzipPromise(buffer);
+    return compressed;
+  } catch (error: any) {
+    throw new Error(`Error encoding data to gzip: ${error.message}`);
   }
-  return result;
-}
+};
