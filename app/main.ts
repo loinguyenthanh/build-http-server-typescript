@@ -99,11 +99,11 @@ const server = net.createServer((socket) => {
 
                 let header = `Content-Type: text/plain${CRLF}Content-Length: ${dataEcho.length}`
 
-                console.log("userAgent", acceptEncoding, gzipSync(dataEcho))
+                console.log("userAgent", acceptEncoding, dataEcho, gzipSync(dataEcho))
 
                 if(acceptEncoding && acceptEncoding.includes('gzip')) {
-                    header = `Content-Encoding: gzip${CRLF}${header}`
                     dataEcho = gzipSync(Buffer.from(dataEcho, 'utf8'))
+                    header = `Content-Encoding: gzip${CRLF}Content-Type: text/plain${CRLF}Content-Length: ${dataEcho.length}`
                 }
 
                 response = `${httpVersion} ${HTTP_STATUS_CODE.OK}${CRLF}${header}${CRLF}${CRLF}`
