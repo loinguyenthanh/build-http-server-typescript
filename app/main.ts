@@ -103,7 +103,7 @@ const server = net.createServer((socket) => {
 
                 if(acceptEncoding && acceptEncoding.includes('gzip')) {
                     header = `Content-Encoding: gzip${CRLF}${header}`
-                    dataEcho = gzipSync(dataEcho)
+                    dataEcho = gzipSync(Buffer.from(dataEcho, 'utf8'))
                 }
 
                 response = `${httpVersion} ${HTTP_STATUS_CODE.OK}${CRLF}${header}${CRLF}${CRLF}`
