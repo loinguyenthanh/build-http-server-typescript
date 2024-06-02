@@ -89,7 +89,7 @@ const server = net.createServer((socket) => {
 
                 console.log("userAgent", acceptEncoding)
 
-                const header = `${acceptEncoding.includes('gzip') ? `Content-Encoding: gzip${CRLF}` : ''}Content-Type: text/plain${CRLF}Content-Length: ${dataEcho.length}`
+                const header = `${acceptEncoding && acceptEncoding.includes('gzip') ? `Content-Encoding: gzip${CRLF}` : ''}Content-Type: text/plain${CRLF}Content-Length: ${dataEcho.length}`
 
                 response = `${httpVersion} ${HTTP_STATUS_CODE.OK}${CRLF}${header}${CRLF}${CRLF}${dataEcho}`
                 break;
