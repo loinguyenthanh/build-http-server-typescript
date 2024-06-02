@@ -1,6 +1,7 @@
 import * as net from 'net'
 import * as fs from 'fs'
 import { saveDataToFile } from './helpers'
+import { CRLF, HTTP_STATUS_CODE } from './constants'
 
 const METHOD_INDEX = 0
 const PATH_REQUEST_INDEX = 1
@@ -21,7 +22,7 @@ console.log("args", args)
 const server = net.createServer((socket) => {
     socket.on('data', async (data) => {
         const requestString = data.toString()
-        const requestInfoArray = requestString.split('\r\n')
+        const requestInfoArray = requestString.split(CRLF)
 
         const [requestInfoRaw] = requestInfoArray
 
@@ -38,9 +39,9 @@ const server = net.createServer((socket) => {
         console.log("\r\nrequestInfo", requestInfo)
         console.log("\r\nmethod", method)
         console.log("\r\npathRequest", pathRequest)
-        console.log("\r\dataBody", dataBody)
+        console.log("\r\ndataBody", dataBody)
 
-        let response: string = `${httpVersion} 404 Not Found\r\n`
+        let response: string = `${httpVersion} ${HTTP_STATUS_CODE.NOT_FOUND}${CRLF}`
 
         function changeResponse(response: string): void {
             socket.write(response);
@@ -48,12 +49,12 @@ const server = net.createServer((socket) => {
         }
 
         function getInfoHeader(key: string) {
-            return requestString.split(`${key}: `)[1].split('\r\n')[0]
+            return requestString.split(`${key}: `)[1].split(CRLF)[0]
         }
 
         switch (path) {
             case '': {
-                response = `${httpVersion} 200 OK\r\n\r\n`
+                response = `${httpVersion} ${HTTP_STATUS_CODE.OK}${CRLF}${CRLF}`
                 break;
             }
             case 'files': {
@@ -66,36 +67,34 @@ const server = net.createServer((socket) => {
                 if (method === "GET") {
                     try {
                         const data = fs.readFileSync(fileDir, 'utf-8');
-                        response = `${httpVersion} 200 OK\r\nContent-Type: application/octet-stream\r\nContent-Length: ${data.length}\r\n\r\n${data}`;
+                        response = `${httpVersion} ${HTTP_STATUS_CODE.OK}${CRLF}Content-Type: application/octet-stream${CRLF}Content-Length: ${data.length}${CRLF}${CRLF}${data}`;
                     } catch (err) {
-                        response = `${httpVersion} 404 Not Found\r\n\r\nFile not found`;
+                        response = `${httpVersion} ${HTTP_STATUS_CODE.NOT_FOUND}${CRLF}${CRLF}File not found`;
                     }
                 } else {
                     const result = await saveDataToFile(fileDir, dataBody)
 
                     if (result) {
-                        response = `${httpVersion} 201 Created\r\nContent-Type: application/octet-stream\r\nContent-Length: ${dataBody.length}\r\n\r\n${dataBody}`;
+                        response = `${httpVersion} ${HTTP_STATUS_CODE.CREATED}${CRLF}Content-Type: application/octet-stream${CRLF}Content-Length: ${dataBody.length}${CRLF}${CRLF}${dataBody}`;
                     } else {
-                        response = `${httpVersion} 400 Bad Request\r\n`;
+                        response = `${httpVersion} ${HTTP_STATUS_CODE.BAD_REQUEST}${CRLF}`;
                     }
-
-
                 }
 
                 break;
             }
             case 'echo': {
                 const dataEcho = pathRequest.slice(PATH_ECHO.length + 1)
-                response = `${httpVersion} 200 OK\r\nContent-Type: text/plain\r\nContent-Length: ${dataEcho.length}\r\n\r\n${dataEcho}`
+                response = `${httpVersion} ${HTTP_STATUS_CODE.OK}${CRLF}Content-Type: text/plain${CRLF}Content-Length: ${dataEcho.length}${CRLF}${CRLF}${dataEcho}`
                 break;
             }
             case 'user-agent': {
                 const userAgent = getInfoHeader('User-Agent')
-                response = `${httpVersion} 200 OK\r\nContent-Type: text/plain\r\nContent-Length: ${userAgent.length}\r\n\r\n${userAgent}`
+                response = `${httpVersion} ${HTTP_STATUS_CODE.OK}${CRLF}Content-Type: text/plain${CRLF}Content-Length: ${userAgent.length}${CRLF}${CRLF}${userAgent}`
                 break;
             }
             default: {
-                response = `${httpVersion} 404 Not Found\r\n\r\n`
+                response = `${httpVersion} ${HTTP_STATUS_CODE.NOT_FOUND}${CRLF}${CRLF}`
                 break;
             }
         }
