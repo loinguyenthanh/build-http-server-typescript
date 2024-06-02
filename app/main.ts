@@ -74,7 +74,7 @@ const server = net.createServer((socket) => {
                     const result = await saveDataToFile(fileDir, dataBody)
 
                     if (result) {
-                        response = `${httpVersion} 201 OK\r\nContent-Type: application/octet-stream\r\nContent-Length: ${dataBody.length}\r\n\r\n${dataBody}`;
+                        response = `${httpVersion} 201 Created\r\nContent-Type: application/octet-stream\r\nContent-Length: ${dataBody.length}\r\n\r\n${dataBody}`;
                     } else {
                         response = `${httpVersion} 400 Bad Request\r\n`;
                     }
